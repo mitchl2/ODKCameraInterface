@@ -1,0 +1,79 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity" >
+
+    <TextView
+        android:id="@+id/shapeInput"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="35dp"
+        android:text="Select a test shape:"
+        android:textSize="20dp" />
+
+    <Button
+        android:id="@+id/multiplex_test"
+        android:layout_width="125dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/malaria_test"
+        android:layout_centerHorizontal="true"
+        android:text="Multiplex Test" />
+
+    <Button
+        android:id="@+id/determine_test"
+        android:layout_width="125dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/multiplex_test"
+        android:layout_centerHorizontal="true"
+        android:text="Determine Test" />
+
+    <Button
+        android:id="@+id/malaria_test"
+        android:layout_width="125dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/shapeInput"
+        android:layout_centerHorizontal="true"
+        android:text="Malaria Test" />
+
+    <CheckBox
+        android:id="@+id/retakeBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignRight="@+id/shapeInput"
+        android:layout_marginBottom="33dp"
+        android:text="Enable retake option" />
+
+    <CheckBox
+        android:id="@+id/enableCustInput"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/determine_test"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="27dp"
+        android:text="Generate custom shape" />
+
+    <Button
+        android:id="@+id/customShape"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/userInputBox"
+        android:layout_centerHorizontal="true"
+        android:text="Custom shape" />
+
+    <EditText
+        android:id="@+id/userInputBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/enableCustInput"
+        android:layout_centerHorizontal="true"
+        android:ems="12"
+        android:hint="H, W, h, w, y, x" >
+
+        <requestFocus />
+    </EditText>
+
+</RelativeLayout>
