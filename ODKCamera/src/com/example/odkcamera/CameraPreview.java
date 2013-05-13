@@ -6,6 +6,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
@@ -18,21 +20,17 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 @SuppressLint("ViewConstructor")
-public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Camera.PictureCallback {
+public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Camera.PictureCallback, Camera.AutoFocusCallback {
 	private SurfaceHolder mHolder;
     private Camera mCamera;
-    private int outerRecW;
-    private int outerRecH;
-    private int innerRecW;
-    private int innerRecH;
-    private int y;
-    private int x;
+    private TestDimensions shapeDim;
     private Context context;
     private FrameLayout screenPreview;
 	private File pictureFile;
 	private byte[] cameraData;
 	private boolean generateShapes;
 	private static String filePath;
+	private Callback parentRef;
 	
     @SuppressWarnings({ "deprecation", "static-access" })
 	public CameraPreview(Context context, Camera camera, FrameLayout preview, String filePath) {
@@ -63,10 +61,12 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     }
     
     public void surfaceDestroyed(SurfaceHolder holder) {
-		mCamera.setPreviewCallback(null);
-		mCamera.stopPreview();
-		mCamera.release();    
-		mCamera = null;
+    	if (mCamera != null) {
+			mCamera.setPreviewCallback(null);
+			mCamera.stopPreview();
+			mCamera.release();    
+			mCamera = null;
+    	}
 	}
 
     public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
@@ -84,8 +84,12 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
         // start preview with new settings
         try {
-	    	Camera.Parameters parameters = mCamera.getParameters();	
-	    	parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_MACRO);
+        	Camera.Parameters parameters = mCamera.getParameters();
+        	List<String> focusModes = parameters.getSupportedFocusModes();
+        	if (focusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
+        	    parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+        	}
+        	
 	        parameters.setPreviewSize(w, h);
 	        mCamera.setDisplayOrientation(90);
 	        mCamera.setParameters(parameters);
@@ -105,7 +109,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 	public void setTestShape(int screenW, int screenH, Context context) {
 		generateShapes = false;
 		// calculate test strip ratio (width/height)
-		double outerRecRatio = (double) outerRecW / outerRecH;
+		double outerRecRatio = (double) shapeDim.getOuterRecW() / shapeDim.getOuterRecH();
 		int outerRecWidth = (int) (screenW * 0.8);
 		int outerRecHeight = (int) (outerRecWidth / outerRecRatio);
 
@@ -134,12 +138,12 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         imgBigRec.setPadding(horzOffset, vertOffset, horzOffset, vertOffset);  
 
 		// Creates the inner rectangle shape and calculates the x and y offsets
-        double recSizeCompare = (double) outerRecWidth / outerRecW;	
+        double recSizeCompare = (double) outerRecWidth / shapeDim.getOuterRecW();	
         // scales the x and y offsets appropriately
-        x = (int) (recSizeCompare * x);
-        y = (int) (recSizeCompare * y);
-        int innerRecWidth = (int) (innerRecW * recSizeCompare);
-		int innerRecHeight = (int) (innerRecH * recSizeCompare);
+        int x = (int) (recSizeCompare * shapeDim.getXoffset());
+        int y = (int) (recSizeCompare * shapeDim.getYoffset());
+        int innerRecWidth = (int) (shapeDim.getInnerRecW() * recSizeCompare);
+		int innerRecHeight = (int) (shapeDim.getInnerRecH() * recSizeCompare);
 
 		GradientDrawable smallRec = new GradientDrawable();
         smallRec.setShape(0);
@@ -182,23 +186,20 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 	
 	// Sets the private fields corresponding to the sizes of the test
 	// strips and the x and y offset of the inner rectangle
-	public void setShapeSize(int outerRecW, int outerRecH, int innerRecW, int innerRecH, int y, int x) {
-		this.outerRecW = outerRecW;
-		this.outerRecH = outerRecH;
-		this.innerRecW = innerRecW;
-		this.innerRecH = innerRecH;
-		this.y = y;
-		this.x = x;
+	public void setShapeSize(TestDimensions shape) {
+		shapeDim = shape;
 	}
 	
-	public void takePic() {
-		mCamera.takePicture(null, null, this);
+	public void takePic(Callback parent) {
+		parentRef = parent;
+		mCamera.autoFocus(this);
 	}
 
     public void onPictureTaken(byte[] data, Camera camera) {
     	pausePreview();
         pictureFile = getOutputMediaFile();
         cameraData = data;
+        parentRef.enableSaveButton();
     }
 
     // If the "Save" button is pressed then the picture file is saved
@@ -213,6 +214,13 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
        } catch (IOException e) {
            e.printStackTrace();
        }
+	   
+	   // release the camera
+	   mCamera.setPreviewCallback(null);
+	   mCamera.stopPreview();
+	   mCamera.release();
+	   mCamera = null;
+
 	   ((Activity)context).setResult(Activity.RESULT_OK);
 	  // return to the app that called invoked this one
 	   ((Activity)context).finish();
@@ -256,5 +264,9 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 		if (mCamera != null) {
 			mCamera.startPreview();
 		}
+	}
+
+	public void onAutoFocus(boolean success, Camera camera) {
+		mCamera.takePicture(null, null, this);
 	}
 }

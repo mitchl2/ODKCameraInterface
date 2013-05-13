@@ -16,7 +16,11 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import com.example.odkcamera.R;
 
-public class TakePicture extends Activity {
+interface Callback {
+	public void enableSaveButton();
+}
+
+public class TakePicture extends Activity implements Callback {
 	private static final String ODK_CALLER_NAME = "com.example.invokecamera.MainActivity";
 	private Camera mCamera;
 	private CameraPreview mPreview;    
@@ -79,7 +83,12 @@ public class TakePicture extends Activity {
 	    
 	    // initialize the buttons (Take Picture, Retake Picture, and Save Picture)
         takePic = (Button) findViewById(R.id.button_capture);
-        takePic.setOnClickListener(takePicButton);
+        takePic.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				overrideClick();
+			}
+        });
         
         retakePic = (Button) findViewById(R.id.retake_picture);
         retakePic.setOnClickListener(retakePicButton);
@@ -87,8 +96,7 @@ public class TakePicture extends Activity {
         
         savePic = (Button) findViewById(R.id.keep_picture);
         savePic.setOnClickListener(savePicButton);
-        savePic.setEnabled(false);
-        
+        savePic.setEnabled(false);    
 	}  
 	
 	// checks that the test shape array parameters are valid
@@ -140,38 +148,36 @@ public class TakePicture extends Activity {
 	    		
 	    		// Create an instance of Camera
 	    	    mCamera = getCameraInstance();
-
 	    	    preview = (FrameLayout) findViewById(R.id.camera_preview);
 	    	    mPreview = new CameraPreview(this, mCamera, preview, filePath);
 	    	    preview.addView(mPreview);  
 	
-	    		mPreview.setShapeSize(shapeParam[0], shapeParam[1], shapeParam[2], shapeParam[3], shapeParam[4], shapeParam[5]); 
+	    	    TestDimensions shape = new TestDimensions(shapeParam[0], shapeParam[1], shapeParam[2], shapeParam[3], shapeParam[4], shapeParam[5]);
+	    		mPreview.setShapeSize(shape); 
 	    	}
 	    }
 	}
 	
-	private OnClickListener takePicButton = new OnClickListener() {
-        public void onClick(View v) {
-    		mPreview.takePic();
-			// adjust buttons accordingly
-        	takePic.setEnabled(false);
-        	
-        	if (retakeOption) 
-                retakePic.setEnabled(true);
-                
-            savePic.setEnabled(true);
-        }
-    };
+    public void overrideClick() {
+    	// pass a reference to "this" class so that 
+    	// a callback can be made to the enableSaveButton method
+		mPreview.takePic(this);
+    	takePic.setEnabled(false);
+    }
     
+    public void enableSaveButton() {
+    	if (retakeOption) 
+    		retakePic.setEnabled(true);    
+    	
+        savePic.setEnabled(true);
+    }
+   
     private OnClickListener retakePicButton = new OnClickListener() {
         public void onClick(View v) {
     		mPreview.retakePicture();
     		// adjust buttons accordingly 
-        	takePic.setEnabled(true);
-        	
-        	if (retakeOption)
-	            retakePic.setEnabled(false);
-
+        	takePic.setEnabled(true);	
+	        retakePic.setEnabled(false);
             savePic.setEnabled(false);
         }
     };
@@ -179,15 +185,8 @@ public class TakePicture extends Activity {
     private OnClickListener savePicButton = new OnClickListener() {
         public void onClick(View v) {
     		mPreview.savePicture();
-    		// adjust buttons accordingly
-        	takePic.setEnabled(true);
-        	
-        	if (retakeOption) 
-	            retakePic.setEnabled(false);
-
-            savePic.setEnabled(false);
         }
-    };
+    };  
     
 	protected void onPause() {
 		super.onPause();
@@ -199,7 +198,7 @@ public class TakePicture extends Activity {
 		// Handled in CameraPreview
 	}
 	
-	public static Camera getCameraInstance(){
+	public static Camera getCameraInstance() {
 	    Camera c = null;
 	    try {
 	        c = Camera.open();

@@ -71,7 +71,7 @@
         android:layout_below="@+id/enableCustInput"
         android:layout_centerHorizontal="true"
         android:ems="12"
-        android:hint="H, W, h, w, y, x" >
+        android:hint="W, H, w, h, y, x" >
 
         <requestFocus />
     </EditText>
