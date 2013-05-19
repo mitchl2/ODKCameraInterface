@@ -90,13 +90,18 @@ public class TakePicture extends Activity implements Callback {
 			}
         });
         
+        savePic = (Button) findViewById(R.id.keep_picture);
+        savePic.setOnClickListener(savePicButton);
+        savePic.setEnabled(false);    
+        
         retakePic = (Button) findViewById(R.id.retake_picture);
         retakePic.setOnClickListener(retakePicButton);
         retakePic.setEnabled(false);
         
-        savePic = (Button) findViewById(R.id.keep_picture);
-        savePic.setOnClickListener(savePicButton);
-        savePic.setEnabled(false);    
+        if (!retakeOption) {
+        	savePic.setVisibility(View.INVISIBLE);
+        	retakePic.setVisibility(View.INVISIBLE);
+        }
 	}  
 	
 	// checks that the test shape array parameters are valid
@@ -166,10 +171,12 @@ public class TakePicture extends Activity implements Callback {
     }
     
     public void enableSaveButton() {
-    	if (retakeOption) 
+    	if (retakeOption) { // allow user to preview the captured image
     		retakePic.setEnabled(true);    
-    	
-        savePic.setEnabled(true);
+    		savePic.setEnabled(true);
+    	} else {
+    		mPreview.savePicture(); // directly save the picture after it's taken
+    	}
     }
    
     private OnClickListener retakePicButton = new OnClickListener() {

@@ -138,8 +138,9 @@ public class MainActivity extends Activity {
 	
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {  
 	    if (requestCode == CAMERA_PIC_REQUEST) {  
-	    	if (resultCode == RESULT_OK)
-		    	System.out.println("The camera successfully took a picture!");
+	    	if (resultCode == RESULT_OK && data != null) {
+	    		System.out.println("The picture was saved at: " + data.getStringExtra(android.provider.MediaStore.EXTRA_OUTPUT));
+	    	}
 	    }  
 	}  
 }

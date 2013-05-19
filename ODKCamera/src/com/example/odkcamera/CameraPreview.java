@@ -1,5 +1,6 @@
 package com.example.odkcamera;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -11,6 +12,10 @@ import java.util.List;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.graphics.drawable.GradientDrawable;
 import android.hardware.Camera;
 import android.util.Log;
@@ -40,6 +45,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         screenPreview = preview;
         this.filePath = filePath;
         generateShapes = true;
+     // initialize blank shape parameters 
+        shapeDim = new TestDimensions(0, 0, 0, 0, 0, 0); 
         
         // Install a SurfaceHolder.Callback so we get notified when the
         // underlying surface is created and destroyed.
@@ -57,6 +64,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         	}
         } catch (Exception e) {
         	e.printStackTrace();
+        	((Activity)context).setResult(Activity.RESULT_CANCELED);
+      	    ((Activity)context).finish();
         }
     }
     
@@ -102,6 +111,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 	        }
         } catch (Exception e){
             e.printStackTrace();
+            ((Activity)context).setResult(Activity.RESULT_CANCELED);
+      	    ((Activity)context).finish();
         }
     }
 
@@ -198,7 +209,22 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     public void onPictureTaken(byte[] data, Camera camera) {
     	pausePreview();
         pictureFile = getOutputMediaFile();
-        cameraData = data;
+        
+        // rotate the picture back to portrait orientation using matrix rotation
+        // code from: http://stackoverflow.com/questions/10385147/android-camera-preview-rotation
+        Bitmap bitmapPicture= BitmapFactory.decodeByteArray(data, 0, data.length);
+        Matrix matrix = new Matrix();
+        matrix.postRotate(90);
+        int height = bitmapPicture.getWidth();
+        int width = bitmapPicture.getHeight();
+         
+        Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmapPicture,height,width, true);
+        Bitmap rotatedBitmap = Bitmap.createBitmap(scaledBitmap , 0, 0, scaledBitmap.getWidth(), scaledBitmap.getHeight(), matrix, true);
+        
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 50, bytes); 
+        
+        cameraData = bytes.toByteArray();
         parentRef.enableSaveButton();
     }
 
@@ -211,8 +237,12 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
            fos.close();
        } catch (FileNotFoundException e) {
            e.printStackTrace();
+           ((Activity)context).setResult(Activity.RESULT_CANCELED);
+     	   ((Activity)context).finish();
        } catch (IOException e) {
            e.printStackTrace();
+           ((Activity)context).setResult(Activity.RESULT_CANCELED);
+     	   ((Activity)context).finish();
        }
 	   
 	   // release the camera
@@ -221,7 +251,10 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 	   mCamera.release();
 	   mCamera = null;
 
-	   ((Activity)context).setResult(Activity.RESULT_OK);
+	   Intent result = new Intent();
+	   result.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, filePath);
+	   
+	   ((Activity)context).setResult(Activity.RESULT_OK, result);
 	  // return to the app that called invoked this one
 	   ((Activity)context).finish();
     }
@@ -236,12 +269,14 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 	
 	/** Create a File for saving an image or video */
 	@SuppressLint("SimpleDateFormat")
-	private static File getOutputMediaFile() {
+	private File getOutputMediaFile() {
 		File mediaStorageDir = new File(filePath);
 	    // Create the storage directory if it does not exist
 	    if (! mediaStorageDir.exists()){
 	        if (! mediaStorageDir.mkdirs()){
 	            Log.d(filePath, "failed to create directory");
+	            ((Activity)context).setResult(Activity.RESULT_CANCELED);
+	      	    ((Activity)context).finish();
 	            return null;
 	        }
 	    }
